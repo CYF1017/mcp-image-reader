@@ -30,6 +30,7 @@ import urllib.error
 # Windows 下 stdout/stderr 默认是 GBK 编码，无法输出 Unicode 字符
 # 强制使用 UTF-8，确保中文和特殊字符（如 ⚠️）能正常输出
 if sys.platform == "win32":
+    sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
