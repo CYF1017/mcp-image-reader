@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "image-reader": {
+      "command": "python",
+      "args": [
+        "C:/Users/<你的用户名>/.claude/mcp-servers/image-reader/server.py"
+      ],
+      "env": {
+        "MIMO_API_KEY": "你的 API Key",
+        "MIMO_BASE_URL": "https://token-plan-cn.xiaomimimo.com/anthropic"
+      }
+    }
+  }
+}
