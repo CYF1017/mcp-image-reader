@@ -16,12 +16,14 @@
 ## 文件结构
 
 ```
-~/.claude/
-├── .claude.json                       ← MCP Server 注册配置（mcpServers 字段）
-└── mcp-servers/
-    └── image-reader/
-        ├── server.py                  ← MCP Server 主程序
-        └── README.md                  ← 本文件
+~/
+├── .claude.json                       ← 全局配置（mcpServers 字段）
+└── .claude/
+    ├── .mcp.json                      ← MCP Server 注册配置
+    └── mcp-servers/
+        └── image-reader/
+            ├── server.py              ← MCP Server 主程序
+            └── README.md              ← 本文件
 ```
 
 ## 技术栈
@@ -40,7 +42,30 @@
 
 ### 2. 注册 MCP Server
 
-编辑 `~/.claude.json`，在顶层添加 `mcpServers` 字段（如果已有则合并）：
+需要配置 **两个文件**：
+
+#### 文件 1：`~/.claude/.mcp.json`
+
+创建或编辑此文件，内容如下：
+
+```json
+{
+  "image-reader": {
+    "command": "python",
+    "args": [
+      "C:/Users/<你的用户名>/.claude/mcp-servers/image-reader/server.py"
+    ],
+    "env": {
+      "MIMO_API_KEY": "你的 API Key",
+      "MIMO_BASE_URL": "https://token-plan-cn.xiaomimimo.com/anthropic"
+    }
+  }
+}
+```
+
+#### 文件 2：`~/.claude.json`
+
+编辑此文件，在顶层添加 `mcpServers` 字段（如果已有则合并，不要覆盖整个文件）：
 
 ```json
 {
@@ -86,19 +111,11 @@ Claude 会自动调用 `describe_image` tool。
 
 ### 步骤 1：删除 MCP 配置
 
-编辑 `~/.claude.json`，从 `mcpServers` 中删除 `image-reader` 条目：
+需要删除两个文件中的配置：
 
-```diff
-  {
-    "mcpServers": {
--     "image-reader": {
--       "command": "python",
--       "args": ["你的路径/server.py"],
--       "env": { ... }
--     }
-    }
-  }
-```
+**文件 1**：编辑 `~/.claude.json`，从 `mcpServers` 中删除 `image-reader` 条目。
+
+**文件 2**：编辑 `~/.claude/.mcp.json`，删除 `image-reader` 条目（如果文件中没有其他 server，可直接删除整个文件）。
 
 ### 步骤 2：删除项目目录
 
@@ -122,9 +139,9 @@ rm -rf ~/.claude/mcp-servers/
 
 | 问题 | 可能原因 | 排查方法 |
 |------|---------|---------|
-| Claude 没有调用 describe_image | MCP 配置路径错误 | 检查 `~/.claude.json` 中的绝对路径 |
+| Claude 没有调用 describe_image | MCP 配置路径错误 | 检查 `~/.claude.json` 和 `~/.claude/.mcp.json` 中的绝对路径 |
 | tool 调用报错 "file not found" | 图片路径问题 | 确认使用绝对路径 |
-| API 返回 401 | API Key 错误 | 检查 `~/.claude.json` 中的 MIMO_API_KEY |
+| API 返回 401 | API Key 错误 | 检查配置文件中的 MIMO_API_KEY |
 | API 返回 403 | 模型不可用 | 确认代理支持 mimo-v2.5 模型 |
 | MCP Server 启动失败 | Python 路径问题 | 终端运行 `python --version` 确认 |
 | UnicodeEncodeError | 编码问题 | server.py 已处理 Windows GBK 编码 |
