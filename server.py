@@ -190,14 +190,19 @@ def handle_tools_call(id, params):
     if not image_path:
         return make_error(id, -32602, "缺少必要参数: image_path")
 
+    # 规范化路径（处理中文路径和 Windows 路径分隔符）
+    image_path = normalize_path(image_path)
+    log(f"规范化后路径: {image_path}")
+
     if not os.path.isfile(image_path):
+        log(f"文件不存在: {image_path}")
         return make_error(id, -32602, f"文件不存在: {image_path}")
 
     # 调用图片处理流程
     description = process_image(image_path, prompt)
 
     if description is None:
-        return make_error(id, -32000, "图片处理失败，请检查日志")
+        return make_error(id, -32000, f"图片处理失败: {image_path}，请检查日志")
 
     # MCP tool 响应格式：content 数组，每个元素有 type 和对应内容
     return make_result(id, {
@@ -208,6 +213,20 @@ def handle_tools_call(id, params):
             }
         ]
     })
+
+
+def normalize_path(path):
+    """
+    规范化文件路径，解决中文路径问题。
+    - 将正斜杠统一为当前系统的路径分隔符
+    - 去除首尾空格和引号
+    - 展开环境变量和 ~
+    """
+    path = path.strip().strip('"').strip("'")
+    path = os.path.expandvars(path)
+    path = os.path.expanduser(path)
+    path = os.path.normpath(path)
+    return path
 
 
 # ============================================================
@@ -234,12 +253,27 @@ def process_image(image_path, prompt):
 
     # 2. 检测 MIME 类型
     # mimetypes 根据文件扩展名猜测类型
-    mime_type, _ = mimetypes.guess_type(image_path)
+    try:
+        mime_type, _ = mimetypes.guess_type(image_path)
+    except Exception:
+        mime_type = None
     if mime_type is None:
-        # 无法识别时的兜底：读取文件头魔数
+        # 中文路径可能导致 mimetypes 失败，用扩展名兜底
+        ext = os.path.splitext(image_path)[1].lower()
+        ext_to_mime = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+            ".webp": "image/webp",
+            ".bmp": "image/bmp",
+        }
+        mime_type = ext_to_mime.get(ext)
+    if mime_type is None:
+        # 最终兜底：读取文件头魔数
         mime_type = detect_mime_from_header(image_data)
     if mime_type is None:
-        mime_type = "image/png"  # 最终兜底
+        mime_type = "image/png"
     log(f"MIME 类型: {mime_type}")
 
     # 3. base64 编码
